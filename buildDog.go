@@ -1,18 +1,28 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"path/filepath"
-	"strconv"
 	"runtime"
+	"strconv"
 )
 
 var version int = 1
 
-var workingDir = filepath.Join(os.TempDir(), "BuildDog", strconv.Itoa(version))
+var (
+	flPort    int
+	flDir     string
+	flSignKey string
+)
+
+var workingDir string
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
+	flag.IntVar(&flPort, "port", 8888, "server port")
+	flag.StringVar(&flDir, "dir", os.TempDir(), "building dir")
+	flag.StringVar(&flSignKey, "key", "", "Sign GPG key")
 }
 
 func initWorkingDir() {
@@ -38,6 +48,15 @@ create:
 }
 
 func main() {
+
+	flag.Parse()
+
+	if flSignKey == "" {
+		flag.Usage()
+	}
+
+	workingDir = filepath.Join(flDir, "BuildDog", strconv.Itoa(version))
+
 	initWorkingDir()
 	initTaskPool()
 

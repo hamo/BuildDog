@@ -76,7 +76,7 @@ func newAPIHandler() http.Handler {
 
 func newAPIServer() *http.Server {
 	return &http.Server{
-		Addr:    ":8888",
+		Addr:    fmt.Sprintf(":%d", flPort),
 		Handler: newAPIHandler(),
 	}
 }

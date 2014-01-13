@@ -1,7 +1,5 @@
 package main
 
-var signKey = "A4691A33"
-
 type builder interface {
 	build() error
 }

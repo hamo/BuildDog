@@ -31,7 +31,7 @@ func (d *debuilder) build() error {
 
 	// args = append(args, "-d")
 
-	args = append(args, "-k" + signKey)
+	args = append(args, "-k" + flSignKey)
 
 	args = append(args, "-S")
 
