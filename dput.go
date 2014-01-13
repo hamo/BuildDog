@@ -31,8 +31,6 @@ func runDput(workingDir string, PPA string, output io.Writer) error {
 
 	var args = []string{"-d"}
 
-	args = append(args, "-s")
-
 	args = append(args, PPA)
 
 	// FIXME: Generate .changes name instead of iterate working
@@ -41,8 +39,9 @@ func runDput(workingDir string, PPA string, output io.Writer) error {
 	if changesFile == "" {
 		return errors.New("Can not find .changes file")
 	}
-	target := filepath.Join(workingDir, changesFile)
-	args = append(args, target)
+	// target := filepath.Join(workingDir, changesFile)
+	// args = append(args, target)
+	args = append(args, changesFile)
 
 	cmd := exec.Command("dput", args...)
 	cmd.Dir = workingDir
