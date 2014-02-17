@@ -9,10 +9,25 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var handlerMatrix = map[string]map[string]http.HandlerFunc{
+type HttpApiFunc func(w http.ResponseWriter, r *http.Request, vars map[string]string)
+
+func makeHttpHandler(localMethod string, localRoute string, handlerFunc HttpApiFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Check User-Agent
+		if r.Header.Get("User-Agent") != "BuildDog-Client" {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+
+		handlerFunc(w, r, mux.Vars(r))
+		return
+
+	}
+}
+
+var handlerMatrix = map[string]map[string]HttpApiFunc{
 	"GET": {
-		"/build": getBuild,
-		"/task/{id:[0-9]+}": getTaskStatus,
+		"/task/{id:[0-9]+}":        getTaskStatus,
 		"/task/{id:[0-9]+}/output": getTaskOutput,
 	},
 	"POST": {
@@ -20,24 +35,19 @@ var handlerMatrix = map[string]map[string]http.HandlerFunc{
 	},
 }
 
-func getBuild(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, buildPage)
-}
-
-func getTaskStatus(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+func getTaskStatus(w http.ResponseWriter, r *http.Request, vars map[string]string) {
 	id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	t := getTaskById(id)
 	if t == nil {
 		http.NotFound(w, r)
 	} else {
 		json, _ := json.Marshal(t)
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Write(json)
 	}
 }
 
-func getTaskOutput(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+func getTaskOutput(w http.ResponseWriter, r *http.Request, vars map[string]string) {
 	id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	t := getTaskById(id)
 	if t == nil {
@@ -47,7 +57,7 @@ func getTaskOutput(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func postBuild(w http.ResponseWriter, r *http.Request) {
+func postBuild(w http.ResponseWriter, r *http.Request, vars map[string]string) {
 	args := make(map[string]string)
 	r.ParseForm()
 	if _, ok := r.Form["repo"]; ok {
@@ -67,7 +77,8 @@ func newAPIHandler() http.Handler {
 
 	for method, routes := range handlerMatrix {
 		for route, fct := range routes {
-			h.Path(route).Methods(method).HandlerFunc(fct)
+			f := makeHttpHandler(method, route, fct)
+			h.Path(route).Methods(method).HandlerFunc(f)
 		}
 	}
 
