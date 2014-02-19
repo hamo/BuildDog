@@ -24,6 +24,8 @@ var (
 )
 
 type task struct {
+	Creator string
+
 	Repo string
 	Rev  string
 	PPA  string
@@ -57,6 +59,7 @@ func initTaskPool() {
 
 func newTask(args map[string]string) *task {
 	var t task
+	t.Creator = args["creator"]
 	t.Repo = args["repo"]
 	t.PPA = args["ppa"]
 	t.Rev = args["rev"]

@@ -75,6 +75,7 @@ func postBuild(u string, w http.ResponseWriter, r *http.Request, vars map[string
 	} else {
 		panic("not implemented")
 	}
+	args["creator"] = u
 	t := newTask(args)
 	id := t.enqueue()
 	fmt.Fprintln(w, id)
