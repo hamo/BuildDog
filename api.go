@@ -9,17 +9,25 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type HttpApiFunc func(w http.ResponseWriter, r *http.Request, vars map[string]string)
+const (
+	userAgent = "BuildDog-Client"
+	token     = "testing"
+)
+
+type HttpApiFunc func(username string, w http.ResponseWriter, r *http.Request, vars map[string]string)
 
 func makeHttpHandler(localMethod string, localRoute string, handlerFunc HttpApiFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Check User-Agent
-		if r.Header.Get("User-Agent") != "BuildDog-Client" {
+		if r.Header.Get("User-Agent") != userAgent ||
+			r.Header.Get("Auth-Token") != token {
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
 		}
 
-		handlerFunc(w, r, mux.Vars(r))
+		u := r.Header.Get("Username")
+
+		handlerFunc(u, w, r, mux.Vars(r))
 		return
 
 	}
@@ -35,7 +43,7 @@ var handlerMatrix = map[string]map[string]HttpApiFunc{
 	},
 }
 
-func getTaskStatus(w http.ResponseWriter, r *http.Request, vars map[string]string) {
+func getTaskStatus(u string, w http.ResponseWriter, r *http.Request, vars map[string]string) {
 	id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	t := getTaskById(id)
 	if t == nil {
@@ -47,7 +55,7 @@ func getTaskStatus(w http.ResponseWriter, r *http.Request, vars map[string]strin
 	}
 }
 
-func getTaskOutput(w http.ResponseWriter, r *http.Request, vars map[string]string) {
+func getTaskOutput(u string, w http.ResponseWriter, r *http.Request, vars map[string]string) {
 	id, _ := strconv.ParseUint(vars["id"], 10, 64)
 	t := getTaskById(id)
 	if t == nil {
@@ -57,7 +65,7 @@ func getTaskOutput(w http.ResponseWriter, r *http.Request, vars map[string]strin
 	}
 }
 
-func postBuild(w http.ResponseWriter, r *http.Request, vars map[string]string) {
+func postBuild(u string, w http.ResponseWriter, r *http.Request, vars map[string]string) {
 	args := make(map[string]string)
 	r.ParseForm()
 	if _, ok := r.Form["repo"]; ok {
