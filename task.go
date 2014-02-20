@@ -5,8 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
+)
+
+var (
+	taskLogSep = strings.Repeat("=", 30)
 )
 
 var (
@@ -103,6 +108,7 @@ func (t *task) process() {
 	}
 
 	// 1. Check out source code
+	t.Output.WriteString(taskLogSep + " Repo Start " + taskLogSep)
 	t.Status = StatusRunning
 	t.Process = ProcessRepo
 
@@ -112,16 +118,20 @@ func (t *task) process() {
 		t.Error = err.Error()
 		return
 	}
+	t.Output.WriteString(taskLogSep + " Repo Finish " + taskLogSep)
 
 	// 2. Analyze debian dir
+	t.Output.WriteString(taskLogSep + " Analyze Start " + taskLogSep)
 	t.Process = ProcessAnalyze
 	if err := t.analyze(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
 		return
 	}
+	t.Output.WriteString(taskLogSep + " Analyze Finish " + taskLogSep)
 
 	// 3. Build
+	t.Output.WriteString(taskLogSep + " Build Start " + taskLogSep)
 	t.Process = ProcessBuild
 	t.parseBuilder()
 	if err := t.Builder.build(); err != nil {
@@ -129,14 +139,17 @@ func (t *task) process() {
 		t.Error = err.Error()
 		return
 	}
+	t.Output.WriteString(taskLogSep + " Build Finish " + taskLogSep)
 
 	// 4. Sign and dput the changes file
+	t.Output.WriteString(taskLogSep + " Dput Start " + taskLogSep)
 	t.Process = ProcessDput
 	if err := t.dput(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
 		return
 	}
+	t.Output.WriteString(taskLogSep + " Dput Finish " + taskLogSep)
 
 	t.Status = StatusFinish
 	os.RemoveAll(t.WorkingDir)
