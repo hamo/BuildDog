@@ -20,7 +20,7 @@ var workingDir string
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	flag.IntVar(&flPort, "port", 8888, "server port")
+	flag.IntVar(&flPort, "port", 8808, "server port")
 	flag.StringVar(&flDir, "dir", os.TempDir(), "building dir")
 	flag.StringVar(&flSignKey, "key", "", "Sign GPG key")
 }
