@@ -139,5 +139,6 @@ func (t *task) process() {
 	}
 
 	t.Status = StatusFinish
+	os.RemoveAll(t.WorkingDir)
 
 }
