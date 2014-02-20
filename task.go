@@ -102,13 +102,23 @@ func (t *task) enqueue() uint64 {
 
 }
 
+func GenOutputSep(content string) string {
+	re := taskLogSep
+	re = re + " "
+	re = re + content
+	re = re + " "
+	re = re + taskLogSep
+	re = re + "\n"
+	return re
+}
+
 func (t *task) process() {
 	if t.Status != StatusNew {
 		panic("err")
 	}
 
 	// 1. Check out source code
-	t.Output.WriteString(taskLogSep + " Repo Start " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Enter " + ProcessRepo))
 	t.Status = StatusRunning
 	t.Process = ProcessRepo
 
@@ -118,20 +128,20 @@ func (t *task) process() {
 		t.Error = err.Error()
 		return
 	}
-	t.Output.WriteString(taskLogSep + " Repo Finish " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Leave " + ProcessRepo))
 
 	// 2. Analyze debian dir
-	t.Output.WriteString(taskLogSep + " Analyze Start " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Enter " + ProcessAnalyze))
 	t.Process = ProcessAnalyze
 	if err := t.analyze(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
 		return
 	}
-	t.Output.WriteString(taskLogSep + " Analyze Finish " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Leave " + ProcessAnalyze))
 
 	// 3. Build
-	t.Output.WriteString(taskLogSep + " Build Start " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Enter " + ProcessBuild))
 	t.Process = ProcessBuild
 	t.parseBuilder()
 	if err := t.Builder.build(); err != nil {
@@ -139,17 +149,17 @@ func (t *task) process() {
 		t.Error = err.Error()
 		return
 	}
-	t.Output.WriteString(taskLogSep + " Build Finish " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Leave " + ProcessBuild))
 
 	// 4. Sign and dput the changes file
-	t.Output.WriteString(taskLogSep + " Dput Start " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Enter " + ProcessDput))
 	t.Process = ProcessDput
 	if err := t.dput(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
 		return
 	}
-	t.Output.WriteString(taskLogSep + " Dput Finish " + taskLogSep)
+	t.Output.WriteString(GenOutputSep("Leave " + ProcessDput))
 
 	t.Status = StatusFinish
 	os.RemoveAll(t.WorkingDir)
