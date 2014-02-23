@@ -121,6 +121,16 @@ func GenOutputSep(content string) string {
 	return re
 }
 
+func (t *task) setErrorStatus(eID *list.Element, err error) {
+	t.Status = StatusError
+	t.Error = err.Error()
+
+	tasks.lock.Lock()
+	tasks.RunningList.Remove(eID)
+	tasks.ErrorList.PushBack(t.ID)
+	tasks.lock.Unlock()
+}
+
 func (t *task) process() {
 	if t.Status != StatusNew {
 		panic("err")
@@ -137,12 +147,7 @@ func (t *task) process() {
 
 	t.parseRepo()
 	if err := t.RepoWorker.checkout(); err != nil {
-		t.Status = StatusError
-		t.Error = err.Error()
-		tasks.lock.Lock()
-		tasks.RunningList.Remove(eID)
-		tasks.ErrorList.PushBack(t.ID)
-		tasks.lock.Unlock()
+		t.setErrorStatus(eID, err)
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessRepo))
@@ -151,12 +156,7 @@ func (t *task) process() {
 	t.Output.WriteString(GenOutputSep("Enter " + ProcessAnalyze))
 	t.Process = ProcessAnalyze
 	if err := t.analyze(); err != nil {
-		t.Status = StatusError
-		t.Error = err.Error()
-		tasks.lock.Lock()
-		tasks.RunningList.Remove(eID)
-		tasks.ErrorList.PushBack(t.ID)
-		tasks.lock.Unlock()
+		t.setErrorStatus(eID, err)
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessAnalyze))
@@ -166,12 +166,7 @@ func (t *task) process() {
 	t.Process = ProcessBuild
 	t.parseBuilder()
 	if err := t.Builder.build(); err != nil {
-		t.Status = StatusError
-		t.Error = err.Error()
-		tasks.lock.Lock()
-		tasks.RunningList.Remove(eID)
-		tasks.ErrorList.PushBack(t.ID)
-		tasks.lock.Unlock()
+		t.setErrorStatus(eID, err)
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessBuild))
@@ -180,12 +175,7 @@ func (t *task) process() {
 	t.Output.WriteString(GenOutputSep("Enter " + ProcessDput))
 	t.Process = ProcessDput
 	if err := t.dput(); err != nil {
-		t.Status = StatusError
-		t.Error = err.Error()
-		tasks.lock.Lock()
-		tasks.RunningList.Remove(eID)
-		tasks.ErrorList.PushBack(t.ID)
-		tasks.lock.Unlock()
+		t.setErrorStatus(eID, err)
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessDput))
