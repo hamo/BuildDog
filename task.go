@@ -186,6 +186,14 @@ func (t *task) process() {
 	tasks.RunningList.Remove(eID)
 	tasks.lock.Unlock()
 
+	// print buildlog to stdout
+	// style: "[BUILDLOG] time ID user repo[#rev] ppa"
+	if t.Rev != "" {
+		fmt.Printf("[BUILDLOG] %s %d %s %s#%s %s\n", time.Now().Format("RFC3339"), t.ID, t.Creator, t.Repo, t.Rev, t.PPA)
+	} else {
+		fmt.Printf("[BUILDLOG] %s %d %s %s %s\n", time.Now().Format("RFC3339"), t.ID, t.Creator, t.Repo, t.PPA)
+	}
+
 	os.RemoveAll(t.WorkingDir)
 
 }
