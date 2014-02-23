@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"container/list"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -52,15 +53,21 @@ type task struct {
 }
 
 type taskPool struct {
-	lock   sync.Mutex
-	NextId uint64
-	Pool   map[uint64]*task
+	lock sync.Mutex
+
+	NextId      uint64
+	ErrorList   *list.List
+	RunningList *list.List
+
+	Pool map[uint64]*task
 }
 
 var tasks taskPool
 
 func initTaskPool() {
 	tasks.Pool = make(map[uint64]*task)
+	tasks.ErrorList = list.New()
+	tasks.RunningList = list.New()
 }
 
 func newTask(args map[string]string) *task {
@@ -119,6 +126,10 @@ func (t *task) process() {
 		panic("err")
 	}
 
+	tasks.lock.Lock()
+	eID := tasks.RunningList.PushBack(t.ID)
+	tasks.lock.Unlock()
+
 	// 1. Check out source code
 	t.Output.WriteString(GenOutputSep("Enter " + ProcessRepo))
 	t.Status = StatusRunning
@@ -128,6 +139,10 @@ func (t *task) process() {
 	if err := t.RepoWorker.checkout(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
+		tasks.lock.Lock()
+		tasks.RunningList.Remove(eID)
+		tasks.ErrorList.PushBack(t.ID)
+		tasks.lock.Unlock()
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessRepo))
@@ -138,6 +153,10 @@ func (t *task) process() {
 	if err := t.analyze(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
+		tasks.lock.Lock()
+		tasks.RunningList.Remove(eID)
+		tasks.ErrorList.PushBack(t.ID)
+		tasks.lock.Unlock()
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessAnalyze))
@@ -149,6 +168,10 @@ func (t *task) process() {
 	if err := t.Builder.build(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
+		tasks.lock.Lock()
+		tasks.RunningList.Remove(eID)
+		tasks.ErrorList.PushBack(t.ID)
+		tasks.lock.Unlock()
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessBuild))
@@ -159,11 +182,20 @@ func (t *task) process() {
 	if err := t.dput(); err != nil {
 		t.Status = StatusError
 		t.Error = err.Error()
+		tasks.lock.Lock()
+		tasks.RunningList.Remove(eID)
+		tasks.ErrorList.PushBack(t.ID)
+		tasks.lock.Unlock()
 		return
 	}
 	t.Output.WriteString(GenOutputSep("Leave " + ProcessDput))
 
 	t.Status = StatusFinish
+
+	tasks.lock.Lock()
+	tasks.RunningList.Remove(eID)
+	tasks.lock.Unlock()
+
 	os.RemoveAll(t.WorkingDir)
 
 }
