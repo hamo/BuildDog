@@ -29,6 +29,7 @@ var (
 )
 
 type task struct {
+	ID      uint64
 	Creator string
 
 	Repo string
@@ -93,6 +94,7 @@ func (t *task) enqueue() uint64 {
 	tasks.NextId = tasks.NextId + 1
 	tasks.lock.Unlock()
 
+	t.ID = id
 	t.WorkingDir = filepath.Join(workingDir, fmt.Sprintf("%d", id))
 	os.MkdirAll(t.WorkingDir, 0755)
 
