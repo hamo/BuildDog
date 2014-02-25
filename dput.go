@@ -31,6 +31,8 @@ func runDput(workingDir string, PPA string, output io.Writer) error {
 
 	var args = []string{"-d"}
 
+	args = append(args, "-f")
+
 	args = append(args, PPA)
 
 	// FIXME: Generate .changes name instead of iterate working
