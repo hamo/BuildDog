@@ -19,6 +19,8 @@ func (t *task) parseRepo() error {
 		fallthrough
 	case strings.HasPrefix(t.Repo, "bzr+ssh://"):
 		t.RepoWorker = newBzrRepo(t.Repo, t.Rev, t.WorkingDir, t.Output)
+	default:
+		return errors.New("Repo format error")
 	}
 	return nil
 }

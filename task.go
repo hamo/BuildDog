@@ -145,7 +145,10 @@ func (t *task) process() {
 	t.Status = StatusRunning
 	t.Process = ProcessRepo
 
-	t.parseRepo()
+	if err := t.parseRepo(); err != nil {
+		t.setErrorStatus(eID, err)
+		return
+	}
 	if err := t.RepoWorker.checkout(); err != nil {
 		t.setErrorStatus(eID, err)
 		return
