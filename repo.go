@@ -1,8 +1,8 @@
 package main
 
 import (
-	"strings"
 	"errors"
+	"strings"
 )
 
 type repoWorker interface {
@@ -16,19 +16,9 @@ func (t *task) parseRepo() error {
 
 	switch {
 	case strings.HasPrefix(t.Repo, "lp:"):
+		fallthrough
+	case strings.HasPrefix(t.Repo, "bzr+ssh://"):
 		t.RepoWorker = newBzrRepo(t.Repo, t.Rev, t.WorkingDir, t.Output)
 	}
 	return nil
 }
-		
-
-
-
-
-
-
-
-
-
-
-
